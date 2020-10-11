@@ -7,6 +7,8 @@ import {CopyToClipboard} from 'react-copy-to-clipboard';
 import Odometer from 'react-odometerjs';
 
 import { onDiceChange, removeDiceListener, onDiceStatsChange, removeDiceStatsListener } from "../../../api/dice";
+import { onSummaryChange, removeSummaryListener } from "../../../api/summary";
+import { getSummary } from "../../../api/requests";
 
 import Header from 'components/containers/Header';
 
@@ -31,11 +33,15 @@ class MainPage extends Component {
       page: 0,
       limit: 25,
       source: null,
+      balance: null,
     };
   }
 
   async componentDidMount() {
     this.setState({ loading: true });
+
+    this.searchHistory();
+    this.onSummaryChangeListener(gameAddress);
 
     const [transfers, stats] = await Promise.all([getDiceList({ offset: this.state.page * this.state.limit, limit: this.state.limit, source: this.state.source }), getStats()]);
     this.setState({
@@ -51,7 +57,14 @@ class MainPage extends Component {
   componentWillUnmount() {
     removeDiceListener();
     removeDiceStatsListener();
+    removeSummaryListener();
   }
+
+  onSummaryChangeListener = address => {
+    onSummaryChange(address, (data) => {
+      this.setState({ balance: data.balance });
+    });
+  };
 
   onDiceStatsChangeListener = () => {
     onDiceStatsChange((data) => {
@@ -93,9 +106,26 @@ class MainPage extends Component {
     });
   };
 
+  searchHistory = async () => {
+    this.setState({ errors: null });
+
+    try {
+      const summary = await getSummary(gameAddress);
+
+      this.setState({
+        balance: get(summary, 'data.data.balance')
+      });
+    } catch (e) {
+      this.setState({
+        balance: null,
+        errors: e.response.data.errors,
+      });
+    }
+  };
+
 
   render() {
-    const { stats, loading, searchData, limit, page, isCopied } = this.state;
+    const { stats, loading, searchData, limit, page, isCopied, balance } = this.state;
 
     return (
       <div className="app">
@@ -180,6 +210,12 @@ class MainPage extends Component {
                   <div className="game__transactions-header-stats-item-value">{stats ? <Odometer value={stats.count_games} format="(,ddd)" />  : ''}</div>
                 </div>
                 <div className="game__transactions-header-stats-item">
+                  <div className="game__transactions-header-stats-item-label">Soldul jocului</div>
+                  {balance && <div className="game__transactions-header-stats-item-value">
+                    <Odometer value={balance} format="(,ddd)" />
+                  </div>}
+                </div>
+                <div className="game__transactions-header-stats-item">
                   <div className="game__transactions-header-stats-item-label">TOTAL cîstigat</div>
                   <div className="game__transactions-header-stats-item-value">
                     <LogoSmallIcon />
@@ -217,11 +253,13 @@ class MainPage extends Component {
                             </div>
                         </td>
                         <td>
-                          <span className={classNames("game__sum-result", [ win ? " win" : "loose"])}>
+                          {player_amount >= 50000 ? <span>Returnat&nbsp; <span className='game__sum-result loose'>>50 000 cMDL </span></span>
+                          : <span className={classNames("game__sum-result", [ win ? " win" : "loose"])}>
                             {win ? "+" : ""}
 
-                            {win ? (prize_amount.toFixed(2)) : (prize_amount.toFixed(2))} cMDL
+                              {win ? (prize_amount.toFixed(2)) : (prize_amount.toFixed(2))} cMDL
                           </span>
+                          }
                         </td>
                       </tr>
                     ))}
