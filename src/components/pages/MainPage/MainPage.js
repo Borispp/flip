@@ -248,12 +248,12 @@ class MainPage extends Component {
                         <td><a href={`https://criptoleu.com/history/${player_address}`} target='_blank' rel="noopener noreferrer" className="game__table-address">{player_address.substring(0, 16)}...</a></td>
                         <td>{(player_amount.toFixed(2))} cMDL</td>
                         <td>
-                            <div className={classNames("game__number", [ win ? " win" : "loose"])}>
-                              {random_number}
-                            </div>
+                          {random_number && <div className={classNames("game__number", [ win ? " win" : "loose"])}>
+                            {random_number}
+                          </div>}
                         </td>
                         <td>
-                          {player_amount >= 50000 ? <span>Returnat&nbsp; <span className='game__sum-result loose'>>50 000 cMDL </span></span>
+                          {win === null ? <span>Returnat&nbsp; <span className='game__sum-result loose'>>50 000 cMDL </span></span>
                           : <span className={classNames("game__sum-result", [ win ? " win" : "loose"])}>
                             {win ? "+" : ""}
 
